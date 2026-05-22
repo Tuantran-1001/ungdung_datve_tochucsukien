@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "16794939681",
+    "project_id": "event-pro-b877c",
+    "storage_bucket": "event-pro-b877c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:16794939681:android:21a7aacf0dc2505bd1ce60",
+        "android_client_info": {
+          "package_name": "com.example.do_an_ltdd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ42IPXxiWx07Ib9aknMnFsNVO9F0nS3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
