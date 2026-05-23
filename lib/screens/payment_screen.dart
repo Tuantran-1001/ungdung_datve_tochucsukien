@@ -100,6 +100,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       
       final Map<String, dynamic> ticketData = {
         'id': ticketId,
+        'userId': userId ?? 'anonymous',
         'eventId': widget.event['id'],
         'eventTitle': widget.event['title'],
         'eventDate': widget.event['date'],

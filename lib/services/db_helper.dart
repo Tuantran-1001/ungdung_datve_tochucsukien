@@ -14,7 +14,7 @@ class DbHelper {
   Future<Database?> get database async {
     if (kIsWeb) return null;
     if (_database != null) return _database;
-    _database = await _initDB('event_pro_v2.db'); // Đổi tên file db để cập nhật cấu trúc mới
+    _database = await _initDB('event_pro_v3.db'); // Đổi tên file db để cập nhật cấu trúc mới
     return _database;
   }
 
@@ -45,6 +45,7 @@ class DbHelper {
     await db.execute('''
       CREATE TABLE tickets (
         id TEXT PRIMARY KEY,
+        userId TEXT,
         eventId TEXT,
         eventTitle TEXT,
         eventDate TEXT,
@@ -96,13 +97,19 @@ class DbHelper {
     return await db.query('events');
   }
 
-  Future<List<Map<String, dynamic>>> queryAllTickets() async {
+  Future<List<Map<String, dynamic>>> queryAllTickets(String? userId) async {
     if (kIsWeb) {
-      return _webTicketsMemory;
+      if (userId == null) return [];
+      return _webTicketsMemory.where((t) => t['userId'] == userId).toList();
     }
     final db = await instance.database;
     if (db == null) return [];
-    return await db.query('tickets');
+    if (userId == null) return [];
+    return await db.query(
+      'tickets',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
   }
 
   Future<void> insertTicket(Map<String, dynamic> data) async {

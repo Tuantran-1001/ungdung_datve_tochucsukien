@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/db_helper.dart';
 import 'ticket_view_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   const MyTicketsScreen({super.key});
@@ -20,11 +22,95 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Future<void> _loadTickets() async {
-    final data = await DbHelper.instance.queryAllTickets();
-    setState(() {
-      _tickets = data;
-      _isLoading = false;
-    });
+    // Luôn ưu tiên hiển thị trạng thái tải nếu danh sách trống để tăng trải nghiệm người dùng
+    if (_tickets.isEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+    List<Map<String, dynamic>> ticketsList = [];
+
+    // 1. Tải dữ liệu từ SQLite cục bộ trước (Offline-First)
+    try {
+      final localData = await DbHelper.instance.queryAllTickets(userId ?? 'anonymous');
+      ticketsList = List<Map<String, dynamic>>.from(localData);
+    } catch (e) {
+      debugPrint('Error loading local tickets: $e');
+    }
+
+    // Cập nhật giao diện nhanh với dữ liệu cục bộ trước để tránh trễ
+    if (mounted) {
+      setState(() {
+        _tickets = List.from(ticketsList);
+        if (userId == null) _isLoading = false;
+      });
+    }
+
+    // 2. Đồng bộ hóa kéo dữ liệu vé đám mây từ Firebase Firestore (nếu đã đăng nhập)
+    if (userId != null) {
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('tickets')
+            .where('userId', isEqualTo: userId)
+            .get();
+
+        final List<Map<String, dynamic>> cloudTickets = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': data['id'] ?? doc.id,
+            'userId': userId,
+            'eventId': data['eventId'] ?? '',
+            'eventTitle': data['eventTitle'] ?? '',
+            'eventDate': data['eventDate'] ?? '',
+            'eventLocation': data['eventLocation'] ?? '',
+            'seatNumber': data['seatNumber'] ?? '',
+            'status': data['status'] ?? 'Chưa sử dụng',
+            'bookingTime': data['bookingTime'] ?? '',
+          };
+        }).toList();
+
+        // Hợp nhất thông tin từ đám mây (tránh trùng lặp vé)
+        bool hasChanges = false;
+        for (var cloudTicket in cloudTickets) {
+          final exists = ticketsList.any((t) => t['id'] == cloudTicket['id']);
+          if (!exists) {
+            ticketsList.add(cloudTicket);
+            hasChanges = true;
+            // Đồng bộ ngược lại lưu xuống SQLite cục bộ để có thể xem offline
+            try {
+              await DbHelper.instance.insertTicket(cloudTicket);
+            } catch (e) {
+              debugPrint('Error sync-saving cloud ticket to local: $e');
+            }
+          } else {
+            // Đồng bộ cập nhật trạng thái nếu đã check-in trên đám mây
+            final localIndex = ticketsList.indexWhere((t) => t['id'] == cloudTicket['id']);
+            if (localIndex != -1 && ticketsList[localIndex]['status'] != cloudTicket['status']) {
+              ticketsList[localIndex] = Map<String, dynamic>.from(ticketsList[localIndex]);
+              ticketsList[localIndex]['status'] = cloudTicket['status'];
+              hasChanges = true;
+            }
+          }
+        }
+
+        if (hasChanges && mounted) {
+          ticketsList.sort((a, b) => (b['id'] ?? '').toString().compareTo((a['id'] ?? '').toString()));
+          setState(() {
+            _tickets = ticketsList;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error syncing tickets from Firestore: $e');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override

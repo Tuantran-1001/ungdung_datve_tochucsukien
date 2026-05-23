@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_tickets_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/news_screen.dart';
 
 void main() async {
   // Đảm bảo các dịch vụ hệ thống của Flutter được khởi tạo đầy đủ
@@ -47,6 +48,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
+    const NewsScreen(),
     const MyTicketsScreen(),
   ];
 
@@ -82,6 +84,11 @@ class _MainNavigationState extends State<MainNavigation> {
               icon: Icon(Icons.explore_outlined),
               activeIcon: Icon(Icons.explore),
               label: 'Sự kiện',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article_outlined),
+              activeIcon: Icon(Icons.article),
+              label: 'Tin tức',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.confirmation_number_outlined),
