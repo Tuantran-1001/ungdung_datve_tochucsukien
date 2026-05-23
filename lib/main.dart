@@ -5,12 +5,11 @@ import 'screens/home_screen.dart';
 import 'screens/my_tickets_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/news_screen.dart';
+import 'services/settings_service.dart';
 
 void main() async {
-  // Đảm bảo các dịch vụ hệ thống của Flutter được khởi tạo đầy đủ
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Khởi động Firebase kết nối lên đám mây đám mây Google
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -23,15 +22,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Event Pro',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber, primary: Colors.amber),
-        useMaterial3: true,
-      ),
-
-      home: const LoginScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppSettings.themeNotifier,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          title: 'Event Pro',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              primary: Colors.blue,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.grey[100],
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              primary: Colors.blue,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.grey[900],
+          ),
+          themeMode: themeMode,
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }
@@ -54,50 +72,62 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: Colors.white.withOpacity(0.06),
-              width: 1,
-            ),
-          ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          backgroundColor: const Color(0xFF131026),
-          selectedItemColor: Colors.amber,
-          unselectedItemColor: Colors.white54,
-          type: BottomNavigationBarType.fixed,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
+    return ValueListenableBuilder<String>(
+      valueListenable: AppSettings.languageNotifier,
+      builder: (context, lang, _) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: AppSettings.themeNotifier,
+          builder: (context, themeMode, _) {
+            final isDark = themeMode == ThemeMode.dark;
+
+            return Scaffold(
+              body: IndexedStack(
+                index: _selectedIndex,
+                children: _screens,
+              ),
+              bottomNavigationBar: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark ? Colors.grey[800]! : Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _selectedIndex,
+                  backgroundColor: isDark ? Colors.grey[850] : Colors.white,
+                  selectedItemColor: Colors.blue,
+                  unselectedItemColor: isDark ? Colors.grey[400] : Colors.grey,
+                  type: BottomNavigationBarType.fixed,
+                  onTap: (index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  items: [
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.explore_outlined),
+                      activeIcon: const Icon(Icons.explore),
+                      label: AppSettings.translate('event_pro'),
+                    ),
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.article_outlined),
+                      activeIcon: const Icon(Icons.article),
+                      label: AppSettings.translate('news'),
+                    ),
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.confirmation_number_outlined),
+                      activeIcon: const Icon(Icons.confirmation_number),
+                      label: AppSettings.translate('ticket'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              activeIcon: Icon(Icons.explore),
-              label: 'Sự kiện',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
-              label: 'Tin tức',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.confirmation_number_outlined),
-              activeIcon: Icon(Icons.confirmation_number),
-              label: 'Vé của tôi',
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

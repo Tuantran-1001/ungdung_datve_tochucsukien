@@ -68,7 +68,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _processingText = 'Đang kết nối cổng thanh toán...';
     });
 
-    // Simulate different payment processing stages
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     setState(() {
@@ -89,7 +88,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _processingText = 'Đang khởi tạo vé điện tử...';
     });
 
-    // Save ticket to local database and sync to Firebase Firestore
     final String timestampSuffix = '${DateTime.now().millisecondsSinceEpoch % 10000}';
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
     final String formattedBookingTime = DateTime.now().toIso8601String().split('.').first;
@@ -110,10 +108,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'bookingTime': formattedBookingTime,
       };
 
-      // 1. Save locally to SQLite
       await DbHelper.instance.insertTicket(ticketData);
 
-      // 2. Sync to Firebase Firestore under collection 'tickets' (Chạy bất đồng bộ nền để tránh treo giao diện nếu mất mạng hoặc lỗi Firebase)
       FirebaseFirestore.instance.collection('tickets').doc(ticketId).set({
         ...ticketData,
         'userId': userId ?? 'anonymous',
@@ -133,96 +129,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       body: Stack(
         children: [
-          // 1. Nền Gradient cao cấp mang lại chiều sâu vũ trụ
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF0F0C20), // Xanh đen sâu thẳm
-                  Color(0xFF15102A), // Chàm đậm
-                  Color(0xFF090615), // Đen vũ trụ
-                ],
-              ),
-            ),
-          ),
-
-          // 2. Các đốm sáng Ambient Glow mềm mại
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.amber.withOpacity(0.1),
-                    Colors.amber.withOpacity(0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 150,
-            left: -60,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.deepOrange.withOpacity(0.08),
-                    Colors.deepOrange.withOpacity(0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // 3. Nội dung chính tùy theo trạng thái
           SafeArea(
             child: _isSuccess 
                 ? _buildSuccessScreen(context)
                 : _buildCheckoutForm(context),
           ),
-
-          // 4. Màn hình xử lý giao dịch ảo phủ kính mờ
           if (_isProcessing) _buildProcessingOverlay(),
         ],
       ),
     );
   }
 
-  // =========================================================================
-  // Giao diện chính của Trang thanh toán (Checkout Form)
-  // =========================================================================
   Widget _buildCheckoutForm(BuildContext context) {
     return Column(
       children: [
-        // Custom AppBar
+        // App Bar đơn giản
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
               const Expanded(
                 child: Text(
                   'Thanh Toán Đặt Vé',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(width: 48), // Để cân bằng
+              const SizedBox(width: 48),
             ],
           ),
         ),
@@ -234,20 +174,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Tóm tắt đơn hàng (Order Summary)
                 _buildOrderSummaryCard(),
                 const SizedBox(height: 24),
 
-                // 2. Chọn phương thức thanh toán
                 const Text(
                   'Phương thức thanh toán',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 _buildPaymentMethodSelector(),
                 const SizedBox(height: 24),
 
-                // 3. Biểu mẫu chi tiết theo phương thức đã chọn
                 _buildSelectedPaymentDetails(),
                 const SizedBox(height: 40),
               ],
@@ -255,22 +192,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ),
 
-        // Thanh thanh toán chân trang
         _buildBottomPaymentBar(),
       ],
     );
   }
 
-  // =========================================================================
-  // Widget: Tóm tắt đơn hàng (Order Summary Card)
-  // =========================================================================
   Widget _buildOrderSummaryCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1A3C).withOpacity(0.5),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,41 +213,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.12),
+                  color: Colors.blue.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.local_activity_rounded, color: Colors.amber, size: 20),
+                child: const Icon(Icons.local_activity_rounded, color: Colors.blue, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(
                 'Tóm tắt đơn hàng',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             widget.event['title'] ?? 'Sự kiện',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.chair_alt_rounded, color: Colors.white.withOpacity(0.5), size: 14),
+              Icon(Icons.chair_alt_rounded, color: Colors.grey[600], size: 14),
               const SizedBox(width: 6),
               Text(
                 'Vị trí ghế: ',
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
               ),
               Text(
                 widget.selectedSeats.join(', '),
-                style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(color: Colors.white10, height: 1),
+            child: Divider(height: 1),
           ),
           _buildPriceRow('Giá vé gốc', '${_ticketPrice.toStringAsFixed(0)} VND'),
           const SizedBox(height: 8),
@@ -323,18 +256,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _buildPriceRow('Số lượng', '1 vé'),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(color: Colors.white10, height: 1),
+            child: Divider(height: 1),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Tổng thanh toán',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
               ),
               Text(
                 '${_totalPrice.toStringAsFixed(0)} VND',
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ],
           ),
@@ -347,15 +280,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
-        Text(value, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+        Text(value, style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500)),
       ],
     );
   }
 
-  // =========================================================================
-  // Widget: Hộp chọn phương thức thanh toán
-  // =========================================================================
   Widget _buildPaymentMethodSelector() {
     return GridView.count(
       shrinkWrap: true,
@@ -366,7 +296,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       childAspectRatio: 2.2,
       children: [
         _buildMethodCard('card', Icons.credit_card_rounded, 'Thẻ Quốc tế', 'Visa / Mastercard', Colors.blue),
-        _buildMethodCard('momo', Icons.wallet_rounded, 'Ví MoMo', 'Khuyên dùng', Colors.pinkAccent),
+        _buildMethodCard('momo', Icons.wallet_rounded, 'Ví MoMo', 'Khuyên dùng', Colors.pink),
         _buildMethodCard('zalopay', Icons.account_balance_wallet_rounded, 'ZaloPay', 'Tiện lợi', Colors.blueAccent),
         _buildMethodCard('qr', Icons.qr_code_scanner_rounded, 'QR Pay', 'Chuyển khoản nhanh', Colors.orange),
       ],
@@ -381,35 +311,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _selectedMethod = methodId;
         });
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? const Color(0xFF1E1A3C).withOpacity(0.8) 
-              : const Color(0xFF1E1A3C).withOpacity(0.3),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.amber : Colors.white.withOpacity(0.08),
+            color: isSelected ? Colors.blue : Colors.grey[300]!,
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: activeGlowColor.withOpacity(0.15),
-              blurRadius: 10,
-              spreadRadius: 1,
-            )
-          ] : null,
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? activeGlowColor.withOpacity(0.15) : Colors.white.withOpacity(0.05),
+                color: isSelected ? activeGlowColor.withOpacity(0.15) : Colors.grey[100],
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 20, color: isSelected ? activeGlowColor : Colors.white60),
+              child: Icon(icon, size: 20, color: isSelected ? activeGlowColor : Colors.grey[600]),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -422,7 +342,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
+                      color: Colors.black87,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       fontSize: 13,
                     ),
@@ -433,7 +353,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSelected ? Colors.amberAccent.withOpacity(0.8) : Colors.white30,
+                      color: isSelected ? Colors.blue : Colors.grey[500],
                       fontSize: 10,
                     ),
                   ),
@@ -446,14 +366,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // =========================================================================
-  // Widget: Hiển thị chi tiết theo phương thức thanh toán
-  // =========================================================================
   Widget _buildSelectedPaymentDetails() {
     if (_selectedMethod == 'card') {
       return _buildCreditCardForm();
     } else if (_selectedMethod == 'momo') {
-      return _buildEWalletInstructions('MoMo', Colors.pinkAccent);
+      return _buildEWalletInstructions('MoMo', Colors.pink);
     } else if (_selectedMethod == 'zalopay') {
       return _buildEWalletInstructions('ZaloPay', Colors.blueAccent);
     } else {
@@ -461,14 +378,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  // Biểu mẫu Thẻ tín dụng Quốc tế
   Widget _buildCreditCardForm() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1A3C).withOpacity(0.4),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Form(
         key: _formKey,
@@ -477,17 +393,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             const Row(
               children: [
-                Icon(Icons.lock_outline_rounded, color: Colors.greenAccent, size: 16),
+                Icon(Icons.lock_outline_rounded, color: Colors.green, size: 16),
                 SizedBox(width: 6),
                 Text(
                   'Cổng thanh toán bảo mật PCI-DSS',
-                  style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Tên chủ thẻ
             _buildTextField(
               controller: _holderNameController,
               label: 'TÊN CHỦ THẺ',
@@ -500,7 +415,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Số thẻ
             _buildTextField(
               controller: _cardNumberController,
               label: 'SỐ THẺ',
@@ -515,7 +429,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Hạn dùng & CVV song song
             Row(
               children: [
                 Expanded(
@@ -570,30 +483,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+          style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
-            prefixIcon: Icon(icon, color: Colors.white30, size: 18),
-            fillColor: const Color(0xFF0F0C20),
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(icon, color: Colors.grey[400], size: 18),
+            fillColor: Colors.grey[50],
             filled: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 11),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 1.5),
+              borderSide: const BorderSide(color: Colors.blue, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -609,14 +522,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // Ví điện tử MoMo / ZaloPay
   Widget _buildEWalletInstructions(String walletName, Color brandColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1A3C).withOpacity(0.4),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         children: [
@@ -631,38 +543,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(height: 16),
           Text(
             'Thanh toán qua ví $walletName',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 8),
           Text(
             'Khi nhấn "Xác nhận", hệ thống sẽ tự động liên kết và mở ứng dụng $walletName trên điện thoại của bạn để tiến hành phê duyệt thanh toán an toàn.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13, height: 1.5),
+            style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
           ),
         ],
       ),
     );
   }
 
-  // Quét QR Code ngân hàng (QR Pay)
   Widget _buildQRCodeSimulation() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1A3C).withOpacity(0.4),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         children: [
           const Text(
             'Quét Mã QR Chuyển Khoản Nhanh',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 6),
           Text(
             'Hệ thống tự động tạo mã chuyển khoản VietQR',
-            style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+            style: TextStyle(color: Colors.grey[500], fontSize: 12),
           ),
           const SizedBox(height: 20),
           Container(
@@ -670,35 +581,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.1),
-                  blurRadius: 15,
-                  spreadRadius: 1,
-                )
-              ],
+              border: Border.all(color: Colors.grey[200]!),
             ),
             child: const Icon(
               Icons.qr_code_2_rounded,
               size: 160,
-              color: Color(0xFF0F0C20),
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.grey[50],
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.verified_user_rounded, color: Colors.greenAccent, size: 16),
+                const Icon(Icons.verified_user_rounded, color: Colors.green, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'Tự động duyệt vé ngay khi nhận tiền',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -708,20 +613,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // =========================================================================
-  // Widget: Thanh thanh toán cố định ở chân trang
-  // =========================================================================
   Widget _buildBottomPaymentBar() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF131026),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
-        boxShadow: [
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black12,
             blurRadius: 10,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           )
         ],
       ),
@@ -736,7 +638,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Text(
                   'TỔNG THANH TOÁN', 
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4), 
+                    color: Colors.grey[600], 
                     fontSize: 10, 
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.bold
@@ -745,20 +647,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${_totalPrice.toStringAsFixed(0)} VND', 
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
                 ),
               ],
             ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: const Color(0xFF0F0C20),
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 6,
-                shadowColor: Colors.amber.withOpacity(0.3),
               ),
               icon: const Icon(Icons.security_rounded, size: 18),
               label: const Text(
@@ -773,23 +673,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // =========================================================================
-  // Màn hình xử lý giao dịch ảo phủ kính mờ (Processing Overlay)
-  // =========================================================================
   Widget _buildProcessingOverlay() {
     return Container(
-      color: const Color(0xFF0F0C20).withOpacity(0.85),
+      color: Colors.black45,
       child: Center(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 40),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1A3C).withOpacity(0.8),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
-            boxShadow: [
+            border: Border.all(color: Colors.grey[200]!),
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black12,
                 blurRadius: 30,
               )
             ],
@@ -801,7 +698,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 width: 50,
                 height: 50,
                 child: CircularProgressIndicator(
-                  color: Colors.amber,
+                  color: Colors.blue,
                   strokeWidth: 4,
                 ),
               ),
@@ -813,7 +710,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   key: ValueKey<String>(_processingText),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -824,7 +721,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 'Vui lòng không tắt ứng dụng hoặc tải lại trang.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.grey[600],
                   fontSize: 11,
                 ),
               ),
@@ -835,9 +732,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // =========================================================================
-  // Màn hình Chúc mừng / Thanh toán thành công (Payment Success Screen)
-  // =========================================================================
   Widget _buildSuccessScreen(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
@@ -846,35 +740,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon checkmark tròn phát sáng rực rỡ
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.greenAccent.withOpacity(0.1),
+                color: Colors.green.withOpacity(0.12),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.greenAccent.withOpacity(0.3), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.greenAccent.withOpacity(0.2),
-                    blurRadius: 30,
-                    spreadRadius: 2,
-                  )
-                ],
+                border: Border.all(color: Colors.green.withOpacity(0.3), width: 2),
               ),
               child: const Icon(
                 Icons.check_circle_rounded,
                 size: 80,
-                color: Colors.greenAccent,
+                color: Colors.green,
               ),
             ),
             const SizedBox(height: 32),
 
-            // Tiêu đề chúc mừng
             const Text(
               'Thanh Toán Thành Công!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.black87,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -885,29 +770,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'Tấm vé của bạn đã sẵn sàng trong kho vé.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.grey[700],
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 32),
 
-            // Mẫu Vé điện tử E-Ticket cao cấp kèm QR Code ngay trên trang thành công
+            // Vé E-Ticket dạng phẳng trắng
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1A3C).withOpacity(0.65),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
-                boxShadow: [
+                border: Border.all(color: Colors.grey[200]!, width: 1),
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black12,
                     blurRadius: 15,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   )
                 ],
               ),
               child: Column(
                 children: [
-                  // Phần trên: Chi tiết thông tin vé
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -919,25 +803,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.amber.withOpacity(0.12),
+                                color: Colors.blue.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.amber.withOpacity(0.2), width: 0.5),
                               ),
                               child: const Text(
                                 'VÉ ĐIỆN TỬ (E-TICKET)',
-                                style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
+                                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.greenAccent.withOpacity(0.12),
+                                color: Colors.green.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.greenAccent.withOpacity(0.2), width: 0.5),
                               ),
                               child: const Text(
                                 'ĐÃ THANH TOÁN',
-                                style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
+                                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
                               ),
                             ),
                           ],
@@ -945,11 +827,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         const SizedBox(height: 16),
                         Text(
                           widget.event['title'] ?? 'Sự kiện',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(color: Colors.white10, height: 1),
+                          child: Divider(height: 1),
                         ),
                         _buildReceiptRow('Thời gian', widget.event['date'] ?? ''),
                         const SizedBox(height: 10),
@@ -971,18 +853,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(color: Colors.white10, height: 1),
+                          child: Divider(height: 1),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Tổng thanh toán',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                             Text(
                               '${_totalPrice.toStringAsFixed(0)} VND',
-                              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           ],
                         ),
@@ -990,19 +872,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ),
 
-                  // Đường cắt rách xẻ vé rạp chiếu phim nét đứt
+                  // Đường cắt nét đứt
                   Row(
                     children: [
                       Container(
                         width: 12,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0C20),
+                          color: Colors.grey[100],
                           borderRadius: const BorderRadius.only(
                             topRight: Radius.circular(12),
                             bottomRight: Radius.circular(12),
                           ),
-                          border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+                          border: Border.all(color: Colors.grey[200]!, width: 0.5),
                         ),
                       ),
                       Expanded(
@@ -1014,7 +896,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 const Expanded(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(horizontal: 2.0),
-                                    child: Divider(color: Colors.white24, height: 1, thickness: 1),
+                                    child: Divider(color: Colors.grey, height: 1, thickness: 1),
                                   ),
                                 ),
                             ],
@@ -1025,18 +907,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         width: 12,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0C20),
+                          color: Colors.grey[100],
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(12),
                             bottomLeft: Radius.circular(12),
                           ),
-                          border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+                          border: Border.all(color: Colors.grey[200]!, width: 0.5),
                         ),
                       ),
                     ],
                   ),
 
-                  // Phần dưới: QR Code phát sáng bọc trong thẻ trắng cao cấp
+                  // QR Code tương phản
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -1046,27 +928,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.amber.withOpacity(0.12),
-                                blurRadius: 15,
-                                spreadRadius: 1,
-                              )
-                            ],
+                            border: Border.all(color: Colors.grey[200]!),
                           ),
                           child: QrImageView(
                             data: 'EP-${widget.event['id']}-${_transactionId}-${widget.selectedSeats.join("_")}',
                             version: QrVersions.auto,
                             size: 130.0,
                             gapless: false,
-                            foregroundColor: const Color(0xFF0F0C20),
+                            foregroundColor: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'QUÉT MÃ NÀY TẠI CỬA VÀO CỔNG',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
+                            color: Colors.grey[500],
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.0,
@@ -1080,19 +956,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 48),
 
-            // Các nút điều hướng
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: const Color(0xFF0F0C20),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 5,
-                  shadowColor: Colors.amber.withOpacity(0.2),
                 ),
                 icon: const Icon(Icons.confirmation_num_rounded, size: 20),
                 label: const Text(
@@ -1101,7 +974,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
                 onPressed: () {
                   final String simulatedTicketId = 'EP-${widget.event['id']}-${DateTime.now().millisecondsSinceEpoch % 10000}-${widget.selectedSeats.first}';
-                  // Navigate directly to TicketViewScreen
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -1126,11 +998,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: double.infinity,
               child: TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white70,
+                  foregroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    side: const BorderSide(color: Colors.blue),
                   ),
                 ),
                 icon: const Icon(Icons.home_rounded, size: 20),
@@ -1159,14 +1031,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       children: [
         Text(
           '$label: ',
-          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
         ),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
             style: TextStyle(
-              color: isValueHighlighted ? Colors.amberAccent : Colors.white,
+              color: isValueHighlighted ? Colors.blue : Colors.black87,
               fontWeight: isValueHighlighted ? FontWeight.bold : FontWeight.w500,
               fontSize: 13,
             ),
