@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_tickets_screen.dart';
-import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -58,19 +57,39 @@ class _MainNavigationState extends State<MainNavigation> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[900],
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Sự kiện'),
-          BottomNavigationBarItem(icon: Icon(Icons.confirmation_number), label: 'Vé của tôi'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withOpacity(0.06),
+              width: 1,
+            ),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          backgroundColor: const Color(0xFF131026),
+          selectedItemColor: Colors.amber,
+          unselectedItemColor: Colors.white54,
+          type: BottomNavigationBarType.fixed,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              activeIcon: Icon(Icons.explore),
+              label: 'Sự kiện',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.confirmation_number_outlined),
+              activeIcon: Icon(Icons.confirmation_number),
+              label: 'Vé của tôi',
+            ),
+          ],
+        ),
       ),
     );
   }

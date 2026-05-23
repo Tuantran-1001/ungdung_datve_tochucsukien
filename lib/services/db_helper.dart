@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -5,12 +6,16 @@ class DbHelper {
   static final DbHelper instance = DbHelper._init();
   static Database? _database;
 
+  // Bộ nhớ đệm lưu vé trong RAM dành riêng cho nền tảng Web (Chrome) do sqflite không hỗ trợ trực tiếp trên web
+  static final List<Map<String, dynamic>> _webTicketsMemory = [];
+
   DbHelper._init();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
+  Future<Database?> get database async {
+    if (kIsWeb) return null;
+    if (_database != null) return _database;
     _database = await _initDB('event_pro_v2.db'); // Đổi tên file db để cập nhật cấu trúc mới
-    return _database!;
+    return _database;
   }
 
   Future<Database> _initDB(String filePath) async {
@@ -82,23 +87,49 @@ class DbHelper {
 
   // --- Các hàm truy vấn dữ liệu ---
   Future<List<Map<String, dynamic>>> queryAllEvents() async {
+    if (kIsWeb) {
+      // Trả về danh sách sự kiện trống hoặc giả lập trên web (Sự kiện trên web được fetch qua Firestore trong home_screen)
+      return [];
+    }
     final db = await instance.database;
+    if (db == null) return [];
     return await db.query('events');
   }
 
   Future<List<Map<String, dynamic>>> queryAllTickets() async {
+    if (kIsWeb) {
+      return _webTicketsMemory;
+    }
     final db = await instance.database;
+    if (db == null) return [];
     return await db.query('tickets');
   }
 
   Future<void> insertTicket(Map<String, dynamic> data) async {
+    if (kIsWeb) {
+      _webTicketsMemory.add(data);
+      return;
+    }
     final db = await instance.database;
-    await db.insert('tickets', data);
+    if (db != null) {
+      await db.insert('tickets', data);
+    }
   }
 
   // Kiểm soát vé tại cửa: Cập nhật trạng thái vé khi quét mã QR thành công
   Future<int> checkInTicket(String ticketId) async {
+    if (kIsWeb) {
+      final index = _webTicketsMemory.indexWhere((t) => t['id'] == ticketId);
+      if (index != -1) {
+        final ticket = Map<String, dynamic>.from(_webTicketsMemory[index]);
+        ticket['status'] = 'Đã check-in';
+        _webTicketsMemory[index] = ticket;
+        return 1;
+      }
+      return 0;
+    }
     final db = await instance.database;
+    if (db == null) return 0;
     return await db.update(
         'tickets',
         {'status': 'Đã check-in'},
