@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'event_detail_screen.dart';
 import 'settings_screen.dart';
+import 'ai_chat_screen.dart';
 import '../data/mock_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,9 +80,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _loadEvents() async {
     setState(() {
-      _events = MockData.initialEvents;
-      _isLoading = false;
+      _isLoading = true;
     });
+
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('events').get();
+      final List<Map<String, dynamic>> firestoreEvents = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': data['id'] ?? doc.id,
+          'title': data['title'] ?? '',
+          'category': data['category'] ?? '',
+          'date': data['date'] ?? '',
+          'time': data['time'] ?? '',
+          'location': data['location'] ?? '',
+          'price': data['price'] ?? 0,
+          'imageUrl': data['imageUrl'] ?? '',
+          'description': data['description'] ?? '',
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _events = firestoreEvents.isNotEmpty ? firestoreEvents : MockData.initialEvents;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading events from Firestore: $e');
+      if (mounted) {
+        setState(() {
+          _events = MockData.initialEvents;
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   // =========================================================================
@@ -591,6 +624,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           _buildEventList(_getFilteredEvents('Workshop'), isDark),
                         ],
                       ),
+              ),
+              floatingActionButton: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Colors.blue, Colors.tealAccent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AIChatScreen()),
+                    );
+                  },
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  highlightElevation: 0,
+                  child: const Icon(Icons.psychology_rounded, color: Colors.white, size: 28),
+                ),
               ),
             );
           },

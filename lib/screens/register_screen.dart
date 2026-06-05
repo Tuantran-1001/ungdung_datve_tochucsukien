@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -34,6 +35,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // Cập nhật "Họ và tên" vào hồ sơ Firebase
         await userCredential.user?.updateDisplayName(_nameController.text.trim());
+
+        // Lưu thông tin người dùng và phân quyền vào Firestore
+        final String email = _emailController.text.trim();
+        final String role = email.toLowerCase() == 'admin@eventpro.com' ? 'admin' : 'user';
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'email': email,
+          'displayName': _nameController.text.trim(),
+          'role': role,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

@@ -4,6 +4,7 @@ import '../services/settings_service.dart';
 import 'profile_screen.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
+import 'transaction_history_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -140,12 +141,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: Icons.lock_outline_rounded,
                             iconColor: Colors.orange,
                             title: AppSettings.translate('change_password'),
-                            subtitle: isEn ? 'Secure your account' : 'Bảo mật tài khoản của bạn',
+                            subtitle: isEn ? 'Change account password' : 'Thay đổi mật khẩu tài khoản',
                             isDark: isDark,
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+                              );
+                            },
+                          ),
+                          Divider(height: 1, color: isDark ? Colors.grey[800] : Colors.grey[200]),
+                          _buildSettingTile(
+                            icon: Icons.receipt_long_rounded,
+                            iconColor: Colors.purple,
+                            title: AppSettings.translate('transaction_history'),
+                            subtitle: isEn ? 'View billing invoices' : 'Xem các hóa đơn thanh toán',
+                            isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
                               );
                             },
                           ),

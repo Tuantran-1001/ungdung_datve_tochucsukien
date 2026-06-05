@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'register_screen.dart'; // Mở sang trang đăng ký
 import '../main.dart'; // Để gọi MainNavigation sau khi đăng nhập xong
+import 'admin/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,12 +47,34 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Đăng nhập thành công -> Nhảy vào màn hình chính và xóa lịch sử Back
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-          (route) => false,
-        );
+        // Đăng nhập thành công -> Kiểm tra quyền và điều hướng phù hợp
+        final user = FirebaseAuth.instance.currentUser;
+        String role = 'user';
+        if (user != null) {
+          try {
+            final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+            if (userDoc.exists && userDoc.data()?['role'] != null) {
+              role = userDoc.data()!['role'];
+            }
+          } catch (e) {
+            debugPrint('Error fetching user role: $e');
+          }
+        }
+
+        if (!mounted) return;
+        if (role == 'admin') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+            (route) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
+        }
 
       } on FirebaseAuthException catch (e) {
         String errorMessage = 'Đăng nhập thất bại. Vui lòng kiểm tra lại.';

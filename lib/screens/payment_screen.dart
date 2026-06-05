@@ -91,6 +91,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final String timestampSuffix = '${DateTime.now().millisecondsSinceEpoch % 10000}';
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
     final String formattedBookingTime = DateTime.now().toIso8601String().split('.').first;
+    final String generatedTxId = 'TX-${100000 + (DateTime.now().millisecondsSinceEpoch % 900000)}';
 
     for (int i = 0; i < widget.selectedSeats.length; i++) {
       final String seat = widget.selectedSeats[i];
@@ -108,7 +109,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'bookingTime': formattedBookingTime,
       };
 
-      await DbHelper.instance.insertTicket(ticketData);
+      try {
+        await DbHelper.instance.insertTicket(ticketData);
+      } catch (dbErr) {
+        debugPrint('Error inserting ticket to local DB: $dbErr');
+      }
 
       FirebaseFirestore.instance.collection('tickets').doc(ticketId).set({
         ...ticketData,
@@ -118,11 +123,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
       });
     }
 
+    // Ghi nhận hóa đơn Lịch sử Giao dịch
+    final String methodLabel = _selectedMethod == 'card' 
+        ? 'Thẻ Visa' 
+        : _selectedMethod == 'momo' 
+            ? 'Ví MoMo' 
+            : _selectedMethod == 'zalopay' 
+                ? 'Ví ZaloPay' 
+                : 'VietQR';
+
+    final Map<String, dynamic> txData = {
+      'id': generatedTxId,
+      'userId': userId ?? 'anonymous',
+      'eventTitle': widget.event['title'] ?? 'Sự kiện',
+      'bookingTime': formattedBookingTime,
+      'paymentMethod': methodLabel,
+      'amount': _totalPrice,
+      'seatNumber': widget.selectedSeats.join(', '),
+      'ticketCount': widget.selectedSeats.length,
+    };
+
+    try {
+      await DbHelper.instance.insertTransaction(txData);
+    } catch (dbErr) {
+      debugPrint('Error inserting transaction to local DB: $dbErr');
+    }
+
+    FirebaseFirestore.instance.collection('transactions').doc(generatedTxId).set(txData).catchError((e) {
+      debugPrint('Error syncing transaction $generatedTxId to Firestore: $e');
+    });
+
     if (!mounted) return;
     setState(() {
       _isProcessing = false;
       _isSuccess = true;
-      _transactionId = 'TX-${100000 + (DateTime.now().millisecondsSinceEpoch % 900000)}';
+      _transactionId = generatedTxId;
     });
   }
 
